@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<head>
+<meta charset="UTF-8">
+<title>CS 424 Lab 9</title>
+<script src="resources/three.js"></script>
+<script src="resources/OrbitControls.js"></script>
+<script>
+
+"use strict";
+
+var canvas, renderer, scene, camera; // Standard three.js requirements.
+
+var controls;  // An OrbitControls object that is used to implement
+               // rotation of the scene using the mouse.  (It actually rotates
+               // the camera around the scene.)
+var bottom;
+var animating = false;  // Set to true when an animation is in progress.
+var frameNumber = 0;  // Frame number is advanced by 1 for each frame while animating.
+
+var horse;
+var horse2;
+var horse3;
+var horse4;
+var horse5;
+var horsez;
+var horsey;
+var horseLast;
+var earth;
+var stomach;
+
+/**
+ *  The render function draws the scene.
+ */
+function render() {
+    renderer.render(scene, camera);
+}
+
+
+/**
+ * This function is called by the init() method to create the world. 
+ */
+function createWorld() {
+    
+    //var top;
+    // call the horse loader
+    loadModel("resources/horse.js");   
+    
+    renderer.setClearColor("grey"); // Background color for scene.
+    scene = new THREE.Scene();
+    
+    // ------------------- Make a camera with viewpoint light ----------------------
+    
+    camera = new THREE.PerspectiveCamera(30, canvas.width/canvas.height, 0.1, 100);
+    camera.position.z = 30;
+    var light;  // A light shining from the direction of the camera; moves with the camera.
+    light = new THREE.DirectionalLight();
+    light.position.set(0,30,0);
+    camera.add(light);
+    
+    var light2;
+    light2 = new THREE.DirectionalLight();
+    light2.position.set(0,0,0);
+    camera.add(light2);
+    scene.add(camera);
+    //------------------- Create the scene's visible objects ----------------------
+    
+     bottom =  new THREE.Mesh(  // DELETE THIS !
+        new THREE.CylinderGeometry(10,10,1/4,600,2),
+        new THREE.MeshPhongMaterial({
+            color: 0x66BBFF,
+            specular: 0x222222,
+            shininess: 16,
+            shading: THREE.FlatShading
+        })
+    );
+  
+    var   pole = new THREE.Mesh(  // the poles with texture
+        new THREE.CylinderGeometry(1/10,1/10,5,600,2),
+        new THREE.MeshLambertMaterial({
+             map: makeTexture("resources/paisley.jpg")})
+    );
+ 
+ 
+    var firstPole = new THREE.Object3D(); // an empty object that will hold a pole
+    ///emoty object in the center of bottom
+    firstPole.position.x = 0; 
+    firstPole.position.y = 0;
+    firstPole.position.z = 0;
+    
+    firstPole.add(pole);
+    //the pole will be 5 in the z axis 
+    pole.position.x = 0;
+    pole.position.y = 2.8;
+    pole.position.z = 9.5;
+    pole.scale.y = 1.10;  
+    
+    bottom.add(firstPole);
+    //poles around the bottom base of the mary-go-round
+    var newPole2 = firstPole.clone(); // first left
+    newPole2.rotation.y = 7 * Math.PI/4;
+    bottom.add(newPole2);
+
+    var newPole3 = firstPole.clone(); // right center
+    newPole3.rotation.y =  Math.PI/2;
+    bottom.add(newPole3);
+           
+    var newPole4 = firstPole.clone(); // first right
+    newPole4.rotation.y =  Math.PI/4;
+    bottom.add(newPole4);
+   
+    var newPole5 = firstPole.clone(); // atras del centro
+    newPole5.rotation.y =  Math.PI;
+    bottom.add(newPole5);
+    
+    var newPole6 = firstPole.clone(); // back right
+    newPole6.rotation.y =  3*Math.PI/4;
+    bottom.add(newPole6);
+   
+    var newPole7 = firstPole.clone(); // left center
+    newPole7.rotation.y =  3*Math.PI/2;
+    bottom.add(newPole7);
+   
+    var newPole8 = firstPole.clone(); // back first left
+    newPole8.rotation.y =  5*Math.PI/4;
+    bottom.add(newPole8);
+
+    var cone = new THREE.Mesh( // cone at the top of the mary-go-round
+             new THREE.ConeGeometry( 10+1/30, 3, 60 ),
+             new THREE.MeshBasicMaterial({
+                 color: 0x66BBFF,
+                 specular: 0x222222,
+                 shininess: 16,
+                 shading: THREE.FlatShading         
+             })                  
+    );
+   
+    cone.position.y = 1.6;
+    
+    var top =  new THREE.Mesh(  /// top cover for the mary-go-round
+           new THREE.CylinderGeometry(10,10,1/4,600,2),
+           new THREE.MeshPhongMaterial({
+                color: 0x66BBFF,
+                specular: 0x222222,
+                shininess: 16,
+                shading: THREE.FlatShading
+           })
+    );
+    
+    top.rotation.y = Math.PI/12;
+    top.position.y = 5.50;
+    top.add(cone);
+    
+    bottom.add(top); // the top of the mary-go-round is addes to the base 
+    bottom.scale.set(0.80,0.80,0.80);
+    bottom.position.y = -4;
+     
+    scene.add(bottom); //the mary-go-round is added to the scene 
+     
+    earth = new THREE.Mesh( // earth at the center of the mary-go-round
+          new THREE.SphereGeometry( 2,32,16 ),
+          new THREE.MeshLambertMaterial({
+              color: "white",
+              map: makeTexture("resources/earth.jpg")
+          })
+    );
+     
+    earth.position.y = -1.65;
+    scene.add(earth); // earth is added to the scene along with the mary-go-round
+   
+   
+    stomach = new THREE.Mesh( // the stomach of the panda 
+           new THREE.SphereGeometry( 1.10,32,16 ),
+           new THREE.MeshLambertMaterial({
+               color: "white",
+           })
+    );
+    
+    stomach.position.y = 4;
+    
+    var head = new THREE.Mesh( // the head of the panda
+             new THREE.SphereGeometry( 0.80,32,16 ),
+             new THREE.MeshLambertMaterial({
+                 color: "white",
+            })
+    );
+   
+   head.position.y = 1.80;
+   stomach.add(head); // head is added to the stomach of the panda 
+
+   var leftEar = new THREE.Mesh( // left ear of the panda 
+              new THREE.SphereGeometry( 0.30,32,16 ),
+              new THREE.MeshLambertMaterial({
+                  color: "black",
+             })
+    );
+   
+    leftEar.position.y = 2.60;
+    leftEar.position.x = 0.70;
+   
+    stomach.add(leftEar); // left ear is added to the head of the panda 
+   
+    var rightEar = new THREE.Mesh( // right ear is added to the head of the panda 
+                new THREE.SphereGeometry( 0.30,32,16 ),
+                new THREE.MeshLambertMaterial({
+                    color: "black",
+               })
+    );
+   
+    rightEar.position.y = 2.60;
+    rightEar.position.x = -.70;
+   
+  stomach.add(rightEar);
+   
+  var nose = new THREE.Mesh( // the nose of the panda
+             new THREE.SphereGeometry( 0.30,32,16 ),
+             new THREE.MeshLambertMaterial({
+                 color: "black",
+           })
+   );
+   
+   nose.position.y = 1.80;
+   nose.position.x = 0;
+   nose.position.z = 1;
+   
+   stomach.add(nose); // the hose is added to the head of the panda
+   
+   var leftEye = new THREE.Mesh( // left eye of the panda 
+              new THREE.SphereGeometry( 0.10,32,16 ),
+              new THREE.MeshLambertMaterial({
+                  color: "black",
+             })
+   );
+   
+   leftEye.position.y = 2.10;
+   leftEye.position.x = .40;
+   leftEye.position.z = 0.70;
+   
+   stomach.add(leftEye); // the left eye is added to the head of the panda 
+
+   var rightEye = new THREE.Mesh( // the right eye is added to the head of the panda
+               new THREE.SphereGeometry( 0.10,32,16 ),
+               new THREE.MeshLambertMaterial({
+                   color: "black",
+              })
+    );
+   
+    rightEye.position.y = 2.10;
+    rightEye.position.x = - .40;
+    rightEye.position.z = 0.70;
+    
+    stomach.add(rightEye); // right eye is added to the panda 
+         
+    stomach.add(rightEye);
+   
+    var button1 = new THREE.Mesh( // top button
+              new THREE.SphereGeometry( 0.10,32,16 ),
+              new THREE.MeshLambertMaterial({
+                  color: "black",
+             })
+    );
+  
+   button1.position.y = 0.70;
+   button1.position.x = 0;
+   button1.position.z = 1;
+   
+   stomach.add(button1); // button 1 is added to the body of the panda 
+    
+   var button2 = new THREE.Mesh( // middle button
+               new THREE.SphereGeometry( 0.10,32,16 ),
+               new THREE.MeshLambertMaterial({
+                   color: "black",
+        })
+    );
+   
+   
+   button2.position.y = 0.30;
+   button2.position.x = 0;
+   button2.position.z = 1.10;
+  
+   stomach.add(button2); // button 2 is added to the body of the panda 
+  
+   var button3 = new THREE.Mesh( // bottom button 
+               new THREE.SphereGeometry( 0.10,32,16 ),
+               new THREE.MeshLambertMaterial({
+                   color: "black",
+        })
+    );
+   
+   button3.position.y = 0;
+   button3.position.x = 0;
+   button3.position.z = 1.10;
+  
+   stomach.add(button3); // button3 is added to the body of the panda 
+   
+   scene.add(stomach); // the panda is added to the scene
+   
+  
+    
+} // end function createWorld()
+//-------------------------------------------------------------------------------//
+/*
+ *makeTexture function will allow object to have texture
+ */
+function makeTexture(imageURL, material) {
+    function callback() {
+        if (material) {
+            material.map = texture;
+            material.needsUpdate = true;
+        }
+        render();  // render scene with texture that has just been loaded.
+    }
+    var loader = new THREE.TextureLoader();
+    var texture = loader.load(imageURL, callback);
+    return texture;
+}
+
+
+//-------------------------------------------------------------------------------//
+/*
+ *The loadModel will allow for the horses to be loaded and added to the scene.
+ *
+ *
+ */
+function loadModel(modelURL) {
+    function callback(geometry) {
+        // To be executed when the model has fully loaded.  The parameter
+        // is geometry that can be used for a THREE.Mesh object.
+     horse = new THREE.Mesh(geometry, // first horse
+             new THREE.MeshLambertMaterial({
+             map: makeTexture("resources/clouds.jpg")})
+             );
+      
+    horse.scale.x = 0.02;
+    horse.scale.y = 0.02;
+    horse.scale.z = 0.02;
+    
+    horse.position.x = 0;
+    horse.position.y = 0.80;
+    horse.position.z = 9.5;
+    horse.rotation.set(0,1.10,0);
+   
+    var center = new THREE.Object3D();  // will hold the first horse and a clone of a horse 
+    
+    center.add(horse);
+    horse2 = center.clone();   
+    horse2.rotation.y =  Math.PI/2;
+    center.add(horse2);
+   
+    //-------------
+    horse3  = new THREE.Mesh(geometry, // second pair of horses 
+              new THREE.MeshLambertMaterial({
+              map: makeTexture("resources/brick.jpg")})
+              );
+      
+    horse3.scale.x = 0.02;
+    horse3.scale.y = 0.02;
+    horse3.scale.z = 0.02;
+   
+    horse3.position.x = 7;
+    horse3.position.y = 1.10;
+    horse3.position.z = 6.50;
+    horse3.rotation.set(0,2.10,0);
+
+    var center2 = new THREE.Object3D(); // will hold horse3 and a clone horse
+
+    center2.add(horse3);
+    horsez = center2.clone();
+    horsez.rotation.y =  Math.PI/2;
+
+    center2.add(horsez);
+    bottom.add(center2);
+    
+    horse4  = new THREE.Mesh(geometry,
+             new THREE.MeshLambertMaterial({
+             map: makeTexture("resources/paisley.jpg")})
+             );
+      
+    horse4.scale.x = 0.02;
+    horse4.scale.y = 0.02;
+    horse4.scale.z = 0.02;
+  
+    horse4.position.x = 0;
+    horse4.position.y = 1;
+    horse4.position.z = -9.50;
+    horse4.rotation.set(0,4.80,0);
+ 
+    var center3 = new THREE.Object3D(); //will hold the second pair of horses
+  
+    center3.add(horse4);
+   
+    horsey = center3.clone();
+    horsey.rotation.y =  Math.PI/2;
+   
+    center3.add(horsey);
+    
+    bottom.add(center3);
+
+    horse5  = new THREE.Mesh(geometry, // // third pair of horses
+              new THREE.MeshLambertMaterial({vertexColors: THREE.FaceColors})
+              );
+               
+    horse5.scale.x = 0.02;
+    horse5.scale.y = 0.02;
+    horse5.scale.z = 0.02;
+    
+    horse5.position.x = -7;
+    horse5.position.y = 1.10;
+    horse5.position.z = -6.30;
+    
+    horse5.rotation.set(0,5.40,0);
+  
+    var center4 = new THREE.Object3D(); // will hold the third pair of horses
+  
+    center4.add(horse5);
+    
+    horseLast = center4.clone();
+    horseLast.rotation.y =  Math.PI/2;
+
+    center4.add(horseLast);
+    bottom.add(center4);
+  
+    bottom.add(center);  
+    
+    render();  // Render the scene with the newly added objects.
+        
+    }
+    var loader = new THREE.JSONLoader();
+    try {
+        loader.load(modelURL, callback);
+    }
+    catch (e) {
+        // Note: Chrome gives an error if loading from local file system.
+        console.log("Error loading model from " + modelURL);
+    }
+}
+
+
+
+//------------------------------------------------------------------------------//
+
+
+
+/**
+ *  This function is called once for each frame of the animation, before
+ *  the render() function is called for that frame.  It updates any
+ *  animated properties.  The value of the global variable frameNumber
+ *  is incrementd 1 before this function is called.
+ */
+var counter = 0;
+function updateForFrame() {
+    
+    // Update size and rotation of tempObject.  DELETE THIS!
+  
+    //tempObject.scale.set(scaleFactor,scaleFactor,scaleFactor);
+    bottom.rotation.y += 0.01;
+    earth.rotation.y += 0.01;
+    stomach.rotation.y += 0.01;
+    
+    if (counter < 100) {
+    
+      horse.position.y =  horse.position.y + 0.01;
+      horse2.position.y =  horse2.position.y + 0.01;
+      horsez.position.y = horsez.position.y - 0.01;
+      horse3.position.y = horse3.position.y - 0.01;
+      horse4.position.y = horse4.position.y + 0.01;
+      horsey.position.y = horsey.position.y + 0.01;
+      horse5.position.y = horse5.position.y - 0.01;
+      horseLast.position.y = horseLast.position.y - 0.01;
+      counter++;
+    } else {
+      horse.position.y =  horse.position.y - 0.01;
+      horse2.position.y =  horse2.position.y - 0.01;
+      horse3.position.y = horse3.position.y + 0.01;
+      horsez.position.y = horsez.position.y + 0.01;
+      horse4.position.y = horse4.position.y - 0.01;
+      horsey.position.y = horsey.position.y - 0.01;
+      horse5.position.y = horse5.position.y + 0.01;
+      horseLast.position.y = horseLast.position.y + 0.01;
+      counter++;
+    
+      if (counter == 200) {
+        counter = 0;
+      }
+   }
+    
+}
+
+
+/* ---------------------------- MOUSE AND ANIMATION SUPPORT ------------------
+
+/**
+ *  This page uses THREE.OrbitControls to let the user use the mouse to rotate
+ *  the view.  OrbitControls are designed to be used during an animation, where
+ *  the rotation is updated as part of preparing for the next frame.  The scene
+ *  is not automatically updated just because the user drags the mouse.  To get
+ *  the rotation to work without animation, I add another mouse listener to the
+ *  canvas, just to call the render() function when the user drags the mouse.
+ *  The same thing holds for touch events -- I call render for any mouse move
+ *  event with one touch.
+ */
+function installOrbitControls() {
+    controls = new THREE.OrbitControls(camera,canvas);
+    controls.noPan = true; 
+    controls.noZoom = true;
+    controls.staticMoving = true;
+    function move() {
+        controls.update();
+        if (! animating) {
+            render();
+        }
+    }
+    function down() {
+        document.addEventListener("mousemove", move, false);
+    }
+    function up() {
+        document.removeEventListener("mousemove", move, false);
+    }
+    function touch(event) {
+        if (event.touches.length == 1) {
+            move();
+        }
+    }
+    canvas.addEventListener("mousedown", down, false);
+    canvas.addEventListener("touchmove", touch, false);
+}
+
+/*  Called when user changes setting of the Animate checkbox. */
+function doAnimateCheckbox() {
+   var run = document.getElementById("animateCheckbox").checked;
+   if (run != animating) {
+       animating = run;
+       if (animating) {
+           requestAnimationFrame(doFrame);
+       }
+   }
+}
+
+/*  Drives the animation, called by system through requestAnimationFrame() */
+function doFrame() {
+    if (animating) {
+        frameNumber++;
+        updateForFrame();
+        render();
+        requestAnimationFrame(doFrame);
+    }
+}
+
+/*----------------------------- INITIALIZATION ----------------------------------------
+
+/**
+ *  This function is called by the onload event so it will run after the
+ *  page has loaded.  It creates the renderer, canvas, and scene objects,
+ *  calls createWorld() to add objects to the scene, and renders the
+ *  initial view of the scene.  If an error occurs, it is reported.
+ */
+function init() {
+    try {
+        canvas = document.getElementById("glcanvas");
+        renderer = new THREE.WebGLRenderer({
+            canvas: canvas,
+            antialias: true,
+            alpha: false
+        });
+    }
+    catch (e) {
+        document.getElementById("message").innerHTML="<b>Sorry, an error occurred:<br>" +
+                e + "</b>";
+        return;
+    }
+    document.getElementById("animateCheckbox").checked = false;
+    document.getElementById("animateCheckbox").onchange = doAnimateCheckbox;
+    createWorld();
+    installOrbitControls();
+    render();
+}
+
+</script>
+</head>
+<body onload="init()">
+
+<h2>Three.js Modeling Demo: Merry-Go-Round</h2>
+
+<noscript>
+   <p style="color: #AA0000; font-weight: bold">Sorry, but this page requires JavaScript!</p>
+</noscript>
+
+<p style="color:#AA0000; font-weight: bold" id="message">
+</p>
+
+<p>
+   <label><input type="checkbox" id="animateCheckbox"><b>Animate</b></label>
+   <b style="margin-left:50px">Use the mouse to rotate the model.</b>
+</p>
+
+<div id="canvas-holder" style="float:left; border: thin solid black; background-color: white">
+   <canvas width=1200 height=600 id="glcanvas"></canvas>
+</div>
+
+</body>
+</html>
